@@ -27,20 +27,22 @@ Requirements:
 - `age`
 - `ssh` / `scp`
 
-Build:
+Install:
 
 ```sh
-go build -o safeenv .
+git clone <this-repo-url>
+cd safeenv
+./install.sh
 ```
 
-Optional install:
+This builds `safeenv` and installs it to:
 
-```sh
-mkdir -p ~/.local/bin
-cp safeenv ~/.local/bin/safeenv
+```text
+/usr/local/bin/safeenv
 ```
 
-Make sure `~/.local/bin` is in your `PATH`.
+It uses `sudo` if your user cannot write there directly, because of course it
+cannot.
 
 ## Basic Usage
 
