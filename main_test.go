@@ -62,6 +62,14 @@ func TestMapTarget(t *testing.T) {
 	}
 }
 
+func TestReleaseURL(t *testing.T) {
+	got := releaseURL("linux", "amd64")
+	want := "https://github.com/jskhalifa/safeenv/releases/download/0.1.1/safeenv-linux-amd64"
+	if got != want {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestParseEnv(t *testing.T) {
 	got, err := parseEnv([]byte(`
 # nope

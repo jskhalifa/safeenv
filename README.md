@@ -45,13 +45,10 @@ This builds and installs:
 
 ```text
 /usr/local/bin/safeenv
-/usr/local/bin/safeenv-linux-amd64
-/usr/local/bin/safeenv-linux-arm64
 ```
 
 It uses `sudo` if your user cannot write there directly, because of course it
-cannot. The extra Linux binaries are what `safeenv push` copies to a VPS, so the
-VPS does not need Go installed.
+cannot.
 
 ## Basic Usage
 
@@ -143,7 +140,8 @@ safeenv push .env.cloud.safeenv user@1.2.3.4 /app
 ```
 
 This pushes that encrypted file to `/app`, detects the VPS OS/arch with
-`uname`, and installs the matching Linux `safeenv` binary on the VPS.
+`uname`, and installs the matching Linux `safeenv` binary from the GitHub release
+for the current `safeenv` version.
 `push` only accepts `*.safeenv` files, so it will reject a plaintext `.env.cloud`
 before anything leaves your machine.
 
@@ -153,8 +151,8 @@ It installs to:
 /usr/local/bin/safeenv
 ```
 
-So you do not need to make GitHub Actions copy or build the binary. Relax. One
-fewer yak.
+So you do not need to make GitHub Actions copy or build the binary, and the VPS
+does not need Go installed. Relax. One fewer yak.
 
 ## GitHub Actions Deploy
 

@@ -15,7 +15,8 @@ import (
 )
 
 const safeenvHeader = "SAFEENV AGE V1\n"
-const version = "0.1.0"
+const version = "0.1.1"
+const releaseRepo = "jskhalifa/safeenv"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -360,11 +361,12 @@ func push(file, host, folder string) error {
 		logEvent("push", "fail", file, nil, err.Error())
 		return err
 	}
-	bin, err := safeenvBinary(host)
+	goos, goarch, err := target(host)
 	if err != nil {
 		logEvent("push", "fail", file, nil, err.Error())
 		return err
 	}
+	asset := releaseURL(goos, goarch)
 	if err := command("ssh", host, "mkdir -p "+shellQuote(folder)).Run(); err != nil {
 		logEvent("push", "fail", file, nil, err.Error())
 		return err
@@ -373,16 +375,16 @@ func push(file, host, folder string) error {
 		logEvent("push", "fail", file, nil, err.Error())
 		return err
 	}
-	if err := command("scp", bin, host+":/tmp/safeenv").Run(); err != nil {
-		logEvent("push", "fail", bin, nil, err.Error())
-		return err
-	}
-	err = command("ssh", host, "install -m 755 /tmp/safeenv /usr/local/bin/safeenv 2>/dev/null || sudo install -m 755 /tmp/safeenv /usr/local/bin/safeenv").Run()
+	install := "tmp=$(mktemp) && " +
+		"(curl -fsSL -o \"$tmp\" " + shellQuote(asset) + " || wget -qO \"$tmp\" " + shellQuote(asset) + ") && " +
+		"(install -m 755 \"$tmp\" /usr/local/bin/safeenv 2>/dev/null || sudo install -m 755 \"$tmp\" /usr/local/bin/safeenv); " +
+		"status=$?; rm -f \"$tmp\"; exit $status"
+	err = command("ssh", host, install).Run()
 	if err != nil {
 		logEvent("push", "fail", file, nil, err.Error())
 		return err
 	}
-	logEvent("push", "ok", file, nil, "installed=/usr/local/bin/safeenv")
+	logEvent("push", "ok", file, nil, "installed=/usr/local/bin/safeenv asset="+asset)
 	return nil
 }
 
@@ -772,23 +774,6 @@ func isDockerCompose(cmd []string) bool {
 	return len(cmd) >= 1 && cmd[0] == "docker-compose"
 }
 
-func safeenvBinary(host string) (string, error) {
-	goos, goarch, err := target(host)
-	if err != nil {
-		return "", err
-	}
-	if goos != "linux" {
-		return "", fmt.Errorf("push only supports linux targets, got %s/%s", goos, goarch)
-	}
-	name := "safeenv-linux-" + goarch
-	for _, path := range []string{filepath.Join("/usr/local/bin", name), name} {
-		if p, err := exec.LookPath(path); err == nil {
-			return p, nil
-		}
-	}
-	return "", fmt.Errorf("%s not found; run ./install.sh first", name)
-}
-
 func target(host string) (string, string, error) {
 	out, err := exec.Command("ssh", host, "uname -s; uname -m").CombinedOutput()
 	if err != nil {
@@ -815,6 +800,10 @@ func mapTarget(osName, archName string) (string, string) {
 		"aarch64": "arm64",
 		"arm64":   "arm64",
 	}[archName]
+}
+
+func releaseURL(goos, goarch string) string {
+	return fmt.Sprintf("https://github.com/%s/releases/download/%s/safeenv-%s-%s", releaseRepo, version, goos, goarch)
 }
 
 func command(name string, args ...string) *exec.Cmd {
