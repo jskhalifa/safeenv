@@ -1,0 +1,7 @@
+.env
+.env.*
+*.key
+*.pub
+*.decrypted
+safeenv
+.gocache/
