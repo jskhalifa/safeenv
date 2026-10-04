@@ -51,6 +51,17 @@ func TestSafeenvPathKeepsDotfileName(t *testing.T) {
 	}
 }
 
+func TestMapTarget(t *testing.T) {
+	goos, goarch := mapTarget("linux", "x86_64")
+	if goos != "linux" || goarch != "amd64" {
+		t.Fatalf("got %s/%s", goos, goarch)
+	}
+	goos, goarch = mapTarget("linux", "aarch64")
+	if goos != "linux" || goarch != "arm64" {
+		t.Fatalf("got %s/%s", goos, goarch)
+	}
+}
+
 func TestParseEnv(t *testing.T) {
 	got, err := parseEnv([]byte(`
 # nope
@@ -71,6 +82,44 @@ export PORT=8080
 		if got[i] != want[i] {
 			t.Fatalf("got %v", got)
 		}
+	}
+}
+
+func TestPrivateKeyUsesCustomEnvName(t *testing.T) {
+	t.Setenv("MY_SAFEENV_KEY", "secret.key")
+	got, err := privateKey("", "MY_SAFEENV_KEY")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "secret.key" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestKeyStatus(t *testing.T) {
+	dir := t.TempDir()
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(old)
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(".env.cloud.pub", []byte("pub"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(".env.cloud.key", []byte("key"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if got := keyStatus(".env.cloud.safeenv"); got != "public-private" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestPushRejectsPlaintextEnv(t *testing.T) {
+	if err := push(".env.cloud", "user@ip", "/app"); err == nil {
+		t.Fatal("expected plaintext push error")
 	}
 }
 

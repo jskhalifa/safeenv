@@ -4,4 +4,5 @@
 *.pub
 *.decrypted
 safeenv
+safeenv-linux-*
 .gocache/
